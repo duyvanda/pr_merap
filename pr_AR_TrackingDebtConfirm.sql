@@ -184,9 +184,7 @@ FROM
     FROM dbo.OM_PDASalesOrd ord WITH (NOLOCK)
         INNER JOIN #TOrderType ot WITH (NOLOCK)
             ON ot.OrderType = ord.OrderType
-		INNER JOIN dbo.OM_SalesOrd sod WITH (NOLOCK) ON 
-        sod.BranchID=ord.BranchID AND
-        sod.OrigOrderNbr=ord.OrderNbr
+		INNER JOIN dbo.OM_SalesOrd sod WITH (NOLOCK) ON sod.BranchID=ord.BranchID AND sod.OrigOrderNbr=ord.OrderNbr
         INNER JOIN dbo.OM_DebtAllocateDet deb
             ON deb.BranchID = ord.BranchID
                AND deb.OrderNbr = ord.OrderNbr
@@ -225,7 +223,7 @@ FROM
            DateOfOrder = CAST( sod.OrderDate AS DATE),
 		   DeliveryTime='',
            TermsID = do.Terms,
-           DueDate= CASE WHEN do.Terms='O1' THEN  DATEADD(DAY,30,do.DueDate) ELSE do.DueDate end,
+           DueDate= CASE WHEN do.Terms='O1' THEN  DATEADD(DAY,30,do.DocDate) ELSE do.DueDate end,
            --CountOpeningOrder=0,
            OpeiningOrderAmt = 0,
            --CountOrdRelease = 1,
@@ -285,7 +283,7 @@ FROM
            DateOfOrder = CAST( sod.OrderDate AS DATE),
 		   DeliveryTime=CAST((DATEDIFF(MINUTE,dl.Crtd_DateTime,dl.LUpd_DateTime)-DATEDIFF(MINUTE,dl.Crtd_DateTime,dl.LUpd_DateTime)%60)/60 AS VARCHAR(8)) +':'+ RIGHT('0'+ CAST(DATEDIFF(MINUTE,dl.Crtd_DateTime,dl.LUpd_DateTime)%60 AS VARCHAR(2)),2),
            TermsID = do.Terms,
-           DueDate= CASE WHEN do.Terms='O1' THEN  DATEADD(DAY,30,do.DueDate) ELSE do.DueDate end,
+           DueDate= CASE WHEN do.Terms='O1' THEN  DATEADD(DAY,30,do.DocDate) ELSE do.DueDate end,
            --CountOpeningOrder=0,
            OpeiningOrderAmt = 0,
            --CountOrdRelease = 0,
@@ -352,7 +350,7 @@ FROM
            DateOfOrder = CAST(sod.OrderDate AS DATE),
 		   DeliveryTime='',
            TermsID = do.Terms,
-           DueDate= CASE WHEN do.Terms='O1' THEN  DATEADD(DAY,30,do.DueDate) ELSE do.DueDate end,
+           DueDate= CASE WHEN do.Terms='O1' THEN  DATEADD(DAY,30,do.DocDate) ELSE do.DueDate end,
            --CountOpeningOrder=0,
            OpeiningOrderAmt = 0,
            --CountOrdRelease = 0,
@@ -426,7 +424,7 @@ FROM
            DateOfOrder = CAST( sod.OrderDate AS DATE),
 		   DeliveryTime='',
            TermsID = do.Terms,
-           DueDate= CASE WHEN do.Terms='O1' THEN  DATEADD(DAY,30,do.DueDate) ELSE do.DueDate end,
+           DueDate= CASE WHEN do.Terms='O1' THEN  DATEADD(DAY,30,do.DocDate) ELSE do.DueDate end,
            --CountOpeningOrder=0,
            OpeiningOrderAmt = 0,
            --CountOrdRelease = 0,
@@ -484,7 +482,7 @@ FROM
            DateOfOrder = CAST( ord.OrderDate AS DATE),
 		   DeliveryTime='',
            TermsID = do.Terms,
-           DueDate= CASE WHEN do.Terms='O1' THEN  DATEADD(DAY,30,do.DueDate) ELSE do.DueDate end,
+           DueDate= CASE WHEN do.Terms='O1' THEN  DATEADD(DAY,30,do.DocDate) ELSE do.DueDate end,
            --CountOpeningOrder=0,
            OpeiningOrderAmt = 0,
            --CountOrdRelease = 0,
@@ -571,7 +569,7 @@ FROM
            DateOfOrder = CAST( ord.OrderDate AS DATE),
 		   DeliveryTime='',
            TermsID = do.Terms,
-           DueDate= CASE WHEN do.Terms='O1' THEN  DATEADD(DAY,30,do.DueDate) ELSE do.DueDate end,
+           DueDate= CASE WHEN do.Terms='O1' THEN  DATEADD(DAY,30,do.DocDate) ELSE do.DueDate end,
            --CountOpeningOrder=0,
            OpeiningOrderAmt = 0,
            --CountOrdRelease = 0,
