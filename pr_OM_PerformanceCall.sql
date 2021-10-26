@@ -1,8 +1,14 @@
+USE [PhaNam_eSales_PRO]
+GO
+
+/****** Object:  StoredProcedure [dbo].[pr_OM_PerformanceCall]    Script Date: 26/10/2021 10:48:36 AM ******/
 SET ANSI_NULLS ON
 GO
+
 SET QUOTED_IDENTIFIER ON
 GO
-ALTER PROC [dbo].[pr_OM_PerformanceCall] -- pr_OM_PerformanceCall '20211001','20211020'
+
+ALTER PROC [dbo].[pr_OM_PerformanceCall] -- pr_OM_PerformanceCall '20211008','20211008'
     @Fromdate DATE,
     @Todate DATE
 AS
@@ -64,7 +70,7 @@ FROM dbo.fr_ListSaleByData('Admin');
 SELECT K.BranchID,
        K.SlsperID,
        K.SalesRouteID,
-       K.SlsFreq,
+       --K.SlsFreq,
        K.CustID,
        K.VisitDate,
        InRoute = MAX(K.InRoute),
@@ -81,7 +87,7 @@ FROM
     SELECT vsr.BranchID,
            vsr.SlsperID,
            d.SalesRouteID,
-           d.SlsFreq,
+           --d.SlsFreq,
            d.CustID,
            d.VisitDate,
            InRoute = 1,
@@ -104,15 +110,15 @@ FROM
     	2.Khách hàng ngoại tuyến: ExtRoute=1
         */
     SELECT DISTINCT
-           slt.BranchID,
+          slt.BranchID,
            slt.SlsperID,
-           rd.SalesRouteID,
-           rd.SlsFreq,
+           srm.SalesRouteID,
+           --rod.SlsFreq,
            slt.CustID,
            VisitDate = CAST(slt.UpdateTime AS DATE),
            InRoute = 0,
            ExtRoute = CASE
-                          WHEN rd.SalesRouteID IS NOT NULL THEN
+                          WHEN et.SlsperID IS NOT NULL THEN
                               1
                           ELSE
                               0
@@ -128,12 +134,16 @@ FROM
                AND srm.SlsperID = slt.SlsperID
                AND CAST(slt.UpdateTime AS DATE)
                BETWEEN srm.FromDate AND srm.ToDate
-        LEFT JOIN #T_RouteDet rd WITH (NOLOCK)
-            ON rd.CustID = slt.CustID
-               AND rd.DayofWeek = 'Sun'
-               AND rd.SalesRouteID = srm.SalesRouteID
-               AND rd.VisitDate
-               BETWEEN srm.FromDate AND srm.ToDate
+		--INNER JOIN dbo.vs_OM_SalesRouteMaster rod WITH (NOLOCK) 
+		--ON srm.SalesRouteID=rod.SalesRouteID 
+		--AND rod.CustID = slt.CustID 
+		--AND CAST(slt.UpdateTime AS DATE) BETWEEN CAST(rod.StartDate AS DATE) AND CAST(rod.EndDate AS DATE)
+        LEFT JOIN #T_ExtRoute et WITH (NOLOCK)
+            ON slt.BranchID = et.BranchID
+               AND et.CustID = slt.CustID
+               AND et.SlsperID = slt.SlsPerID
+               AND CAST(slt.UpdateTime AS DATE)
+               BETWEEN et.StartDate AND et.EndDate
         LEFT JOIN #WithOutNumberCICO wcc WITH (NOLOCK)
             ON wcc.BranchID = slt.BranchID
                AND wcc.NumberCICO = slt.NumberCICO
@@ -146,7 +156,7 @@ FROM
            o.BranchID,
            o.SlsPerID,
            o.SalesRouteID,
-           m.SlsFreq,
+           --m.SlsFreq,
            o.CustID,
            VisitDate = CAST(o.Crtd_DateTime AS DATE),
            InRoute = 0,
@@ -220,16 +230,15 @@ FROM
              o.BranchID,
              o.SlsPerID,
              o.SalesRouteID,
-             o.CustID,
-             m.SlsFreq
+             o.CustID
+             --m.SlsFreq
 ) K
 GROUP BY K.BranchID,
          K.SlsperID,
          K.SalesRouteID,
-         K.SlsFreq,
+         --K.SlsFreq,
          K.CustID,
          K.VisitDate;
-
 
 
 SELECT r.BranchID,
@@ -249,7 +258,7 @@ SELECT r.BranchID,
        RSMName = rm.FirstName,
        r.CustID,
        ac.CustName,
-       r.SlsFreq,
+       --r.SlsFreq,
        ac.Channel,
        ac.ShopType,
        ac.HCOID,
