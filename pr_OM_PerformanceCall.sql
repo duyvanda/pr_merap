@@ -1,14 +1,14 @@
 USE [PhaNam_eSales_PRO]
 GO
 
-/****** Object:  StoredProcedure [dbo].[pr_OM_PerformanceCall]    Script Date: 26/10/2021 10:48:36 AM ******/
+/****** Object:  StoredProcedure [dbo].[pr_OM_PerformanceCall]    Script Date: 26/10/2021 2:53:19 PM ******/
 SET ANSI_NULLS ON
 GO
 
 SET QUOTED_IDENTIFIER ON
 GO
 
-ALTER PROC [dbo].[pr_OM_PerformanceCall] -- pr_OM_PerformanceCall '20211008','20211008'
+ALTER PROC [dbo].[pr_OM_PerformanceCall] -- pr_OM_PerformanceCall '20211001','20211026'
     @Fromdate DATE,
     @Todate DATE
 AS
@@ -244,6 +244,7 @@ GROUP BY K.BranchID,
 SELECT r.BranchID,
        c.CpnyName,
        r.SlsperID,
+	   r.SalesRouteID,
        SlsperName = u.FirstName,
        Position = CASE
                       WHEN u.Position IN ( 'S', 'SS', 'AM', 'RM' ) THEN
@@ -270,7 +271,7 @@ SELECT r.BranchID,
        ac.WardDescr,
        r.VisitDate,
        r.InRoute,
-       r.ExtRoute,
+       ExtRoute=CASE WHEN r.InRoute=1 THEN 0 ELSE r.ExtRoute end,
        r.Visited,
        r.OrderFromPDA,
        r.OrdAmtFromPDA,
