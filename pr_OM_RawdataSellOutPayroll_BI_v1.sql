@@ -1,16 +1,10 @@
-USE [PhaNam_eSales_PRO]
-GO
-
-/****** Object:  StoredProcedure [dbo].[pr_OM_RawdataSellOutPayroll_BI]    Script Date: 27/10/2021 10:05:14 AM ******/
 SET ANSI_NULLS ON
 GO
-
 SET QUOTED_IDENTIFIER ON
 GO
-
 ----  Select * from RPTRunning where ReportNbr='OLAP106' order by ReportID Desc
 
-ALTER PROC [dbo].[pr_OM_RawdataSellOutPayroll_BI] -- pr_OM_RawdataSellOutPayroll_BI  '20210805','20210805'
+CREATE PROC [dbo].[pr_OM_RawdataSellOutPayroll_BI_v1] -- pr_OM_RawdataSellOutPayroll_BI  '20210805','20210805'
     @FromDate DATE,
     @ToDate DATE
 AS
@@ -901,26 +895,26 @@ SELECT [Mã Công Ty/CN] = ISNULL(a.BranchID, ''),
        [Số Đơn Trả Hàng] = ISNULL(a.ReturnOrder, ''),
        [Ngày Trả Hàng] = ISNULL(CONVERT(VARCHAR(10), a.ReturnOrderdate, 103), ''),
        [Hóa Đơn] = ISNULL(a.InvcNbr, ''),
-       [Ngày Tới Hạn TT] = ISNULL(CONVERT(VARCHAR(10), b.DueDate, 103), ''),
-       [Số Hợp Đồng] = ISNULL(con.ContractNbr, ''),
+    --    [Ngày Tới Hạn TT] = ISNULL(CONVERT(VARCHAR(10), b.DueDate, 103), ''),
+    --    [Số Hợp Đồng] = ISNULL(con.ContractNbr, ''),
        [Trạng Thái] = a.Status,
        [Mã KH Thuế] = ISNULL(cu.CustIDInvoice, ''),
-       [Tên KH Thuế] = ISNULL(cu.CustNameInvoice, ''),
-       [Địa Chỉ KH Thuế] = ISNULL(cu.CustInvoiceAddr, ''),
-       [Mã Số Thuế] = ISNULL(cu.TaxID, ''),
-       [Mã KH DMS] = ISNULL(a.CustID, ''),
+    --    [Tên KH Thuế] = ISNULL(cu.CustNameInvoice, ''),
+    --    [Địa Chỉ KH Thuế] = ISNULL(cu.CustInvoiceAddr, ''),
+    --    [Mã Số Thuế] = ISNULL(cu.TaxID, ''),
+    --    [Mã KH DMS] = ISNULL(a.CustID, ''),
        [Mã KH Cũ] = ISNULL(cu.RefCustID, ''),
-       [Tên Khách Hàng] = ISNULL(cu.CustName, ''),
-       [Địa Chỉ KH] = ISNULL(cu.CustAddress, ''),
+    --    [Tên Khách Hàng] = ISNULL(cu.CustName, ''),
+    --    [Địa Chỉ KH] = ISNULL(cu.CustAddress, ''),
        [Mã Vùng BH] = ISNULL(cu.Zone, ''),
        [Tên Vùng BH] = ISNULL(cu.ZoneDescr, ''),
        [Mã Khu Vực] = ISNULL(cu.Territory, ''),
        [Tên Khu Vực] = ISNULL(cu.TerritoryDescr, ''),
        [Mã Tỉnh KH] = ISNULL(cu.State, ''),
        [Tên Tỉnh KH] = ISNULL(cu.StateDescr, ''),
-       [Mã Quận/HUyện] = ISNULL(cu.District, ''),
-       [Tên Quận/HUyện] = ISNULL(cu.DistrictDescr, ''),
-       [Phường/Xã] = ISNULL(cu.WardDescr, ''),
+    --    [Mã Quận/HUyện] = ISNULL(cu.District, ''),
+    --    [Tên Quận/HUyện] = ISNULL(cu.DistrictDescr, ''),
+    --    [Phường/Xã] = ISNULL(cu.WardDescr, ''),
        [Mã Kênh KH] = ISNULL(cu.Channel, ''),
        [Tên Kênh KH] = ISNULL(cu.ChannelDescr, ''),
        [Mã Kênh Phụ] = ISNULL(cu.ShopType, ''),
@@ -940,6 +934,7 @@ SELECT [Mã Công Ty/CN] = ISNULL(a.BranchID, ''),
                                          ISNULL(invt.Descr1, '')
                                  END,
        [Số Lô] = ISNULL(a.Lotsernbr, ''),
+       [LineRef] = a.LineRef, -- #ADDNEW
        [Số Lượng] = (CASE
                          WHEN oo.ARDocType IN ( 'IN', 'DM', 'CS' ) THEN
                              1
@@ -974,7 +969,7 @@ SELECT [Mã Công Ty/CN] = ISNULL(a.BranchID, ''),
        ) * a.OrdQty * a.BeforeVATPrice
                                END,
        [Ngày Đặt Đon] = ISNULL(a.Crtd_DateTime, ''),
-       [Người Tạo Đơn] = ISNULL(cre.FirstName, ''),
+    --    [Người Tạo Đơn] = ISNULL(cre.FirstName, ''),
        [Ngày Giao Hàng] = ISNULL(CONVERT(VARCHAR(20), d.ShipDate, 103), ''),
        [Mã NV] = ISNULL(a.SlsperID, ''),
        [Tên CVBH] = ISNULL(sa.FirstName, ''),
@@ -997,63 +992,64 @@ SELECT [Mã Công Ty/CN] = ISNULL(a.BranchID, ''),
                                     WHEN d.Status = 'E' THEN
                                         N'Không tiếp tục giao hàng'
                                 END,
-       [Sổ Xuất Hàng] = iss.BatNbr,
-       [Đơn Vị Giao Hàng] = iss.Descr,
-       [Tên Nhà Vận Chuyển] = iss.DeliveryUnitName,
-       [Số Xe] = iss.TruckDescr,
-       [Người Chịu Trách Nhiệm Nợ] = ISNULL(foll.FirstName, ''),
-       [Kiểu Đơn Hàng] = a.OrderType,
-       [Mã Lý Do] = sr.ProgramID,
-       [Mã CSBH] = CASE
-                       WHEN ISNULL(dis.TypeDiscount, '') = 'SP' THEN
-                           ISNULL(dis.DiscIDPN, '')
-                       WHEN ISNULL(dis1.TypeDiscount, '') = 'SP' THEN
-                           ISNULL(dis1.DiscIDPN, '')
-                       ELSE
-                           ''
-                   END,
-       [Tên CSBH] = CASE
-                        WHEN ISNULL(dis.TypeDiscount, '') = 'SP' THEN
-                            ISNULL(dis.Descr, '')
-                        WHEN ISNULL(dis1.TypeDiscount, '') = 'SP' THEN
-                            ISNULL(dis1.Descr, '')
-                        ELSE
-                            ''
-                    END,
-       [Mã CTKM] = CASE
-                       WHEN ISNULL(dis.TypeDiscount, '') = 'PR' THEN
-                           ISNULL(dis.DiscIDPN, '')
-                       WHEN ISNULL(dis1.TypeDiscount, '') = 'PR' THEN
-                           ISNULL(dis1.DiscIDPN, '')
-                       ELSE
-                           ''
-                   END,
-       [Tên CTKM] = CASE
-                        WHEN ISNULL(dis.TypeDiscount, '') = 'PR' THEN
-                            ISNULL(dis.Descr, '')
-                        WHEN ISNULL(dis1.TypeDiscount, '') = 'PR' THEN
-                            ISNULL(dis1.Descr, '')
-                        ELSE
-                            ''
-                    END,
-       [Mã CTTL] = CASE
-                       WHEN ISNULL(dis.TypeDiscount, '') = 'AC' THEN
-                           ISNULL(dis.DiscIDPN, '')
-                       WHEN ISNULL(dis1.TypeDiscount, '') = 'AC' THEN
-                           ISNULL(dis1.DiscIDPN, '')
-                       ELSE
-                           ''
-                   END,
-       [Tên CTTL] = CASE
-                        WHEN ISNULL(dis.TypeDiscount, '') = 'AC' THEN
-                            ISNULL(dis.Descr, '')
-                        WHEN ISNULL(dis1.TypeDiscount, '') = 'AC' THEN
-                            ISNULL(dis1.Descr, '')
-                        ELSE
-                            ''
-                    END,
-       [Người Liên Hệ] = cu.Attn,
-       [Số Điện Thoại] = cu.Phone
+    --    [Sổ Xuất Hàng] = iss.BatNbr,
+        [Đơn Vị Giao Hàng] = ISNULL(iss.Descr, iss1.Descr), -- #ADDNEW Don Vi Giao Hang
+        [Tên Nhà Vận Chuyển] = iss.DeliveryUnitName,
+    --    [Số Xe] = iss.TruckDescr,
+    --    [Người Chịu Trách Nhiệm Nợ] = ISNULL(foll.FirstName, ''),
+       [Kiểu Đơn Hàng] = a.OrderType
+    --    [Mã Lý Do] = sr.ProgramID,
+    --    [Mã CSBH] = CASE
+    --                    WHEN ISNULL(dis.TypeDiscount, '') = 'SP' THEN
+    --                        ISNULL(dis.DiscIDPN, '')
+    --                    WHEN ISNULL(dis1.TypeDiscount, '') = 'SP' THEN
+    --                        ISNULL(dis1.DiscIDPN, '')
+    --                    ELSE
+    --                        ''
+    --                END,
+    --    [Tên CSBH] = CASE
+    --                     WHEN ISNULL(dis.TypeDiscount, '') = 'SP' THEN
+    --                         ISNULL(dis.Descr, '')
+    --                     WHEN ISNULL(dis1.TypeDiscount, '') = 'SP' THEN
+    --                         ISNULL(dis1.Descr, '')
+    --                     ELSE
+    --                         ''
+    --                 END,
+    --    [Mã CTKM] = CASE
+    --                    WHEN ISNULL(dis.TypeDiscount, '') = 'PR' THEN
+    --                        ISNULL(dis.DiscIDPN, '')
+    --                    WHEN ISNULL(dis1.TypeDiscount, '') = 'PR' THEN
+    --                        ISNULL(dis1.DiscIDPN, '')
+    --                    ELSE
+    --                        ''
+    --                END,
+    --    [Tên CTKM] = CASE
+    --                     WHEN ISNULL(dis.TypeDiscount, '') = 'PR' THEN
+    --                         ISNULL(dis.Descr, '')
+    --                     WHEN ISNULL(dis1.TypeDiscount, '') = 'PR' THEN
+    --                         ISNULL(dis1.Descr, '')
+    --                     ELSE
+    --                         ''
+    --                 END,
+    --    [Mã CTTL] = CASE
+    --                    WHEN ISNULL(dis.TypeDiscount, '') = 'AC' THEN
+    --                        ISNULL(dis.DiscIDPN, '')
+    --                    WHEN ISNULL(dis1.TypeDiscount, '') = 'AC' THEN
+    --                        ISNULL(dis1.DiscIDPN, '')
+    --                    ELSE
+    --                        ''
+    --                END,
+    --    [Tên CTTL] = CASE
+    --                     WHEN ISNULL(dis.TypeDiscount, '') = 'AC' THEN
+    --                         ISNULL(dis.Descr, '')
+    --                     WHEN ISNULL(dis1.TypeDiscount, '') = 'AC' THEN
+    --                         ISNULL(dis1.Descr, '')
+    --                     ELSE
+    --                         ''
+    --                 END,
+    --    [Người Liên Hệ] = cu.Attn,
+    --    [Số Điện Thoại] = cu.Phone
+
 FROM #Ord a
     INNER JOIN #TCpnyID r WITH (NOLOCK)
         ON r.CpnyID = a.BranchID
@@ -1142,4 +1138,9 @@ DROP TABLE #TDiscFreeItem;
 DROP TABLE #TCpnyID;
 DROP TABLE #TOrderType;
 DROP TABLE #DataReturnIO
+
+
+
+
+
 GO
