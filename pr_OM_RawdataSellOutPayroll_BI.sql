@@ -1,7 +1,7 @@
 USE [PhaNam_eSales_PRO]
 GO
 
-/****** Object:  StoredProcedure [dbo].[pr_OM_RawdataSellOutPayroll_BI]    Script Date: 27/10/2021 10:05:14 AM ******/
+/****** Object:  StoredProcedure [dbo].[pr_OM_RawdataSellOutPayroll_BI]    Script Date: 27/10/2021 10:11:39 AM ******/
 SET ANSI_NULLS ON
 GO
 
@@ -892,7 +892,7 @@ FROM OM_IssueBook ib WITH (NOLOCK)
 --select * from #TOrdDisc
 --select * from #TDiscFreeItem
 
-SELECT [Mã Công Ty/CN] = ISNULL(a.BranchID, ''),
+SELECT DISTINCT [Mã Công Ty/CN] = ISNULL(a.BranchID, ''),
        [Công Ty/CN] = ISNULL(com.CpnyName, ''),
        --[Địa Chỉ Công Ty/CN] = ISNULL(com.Address,'') ,
 
@@ -931,6 +931,7 @@ SELECT [Mã Công Ty/CN] = ISNULL(a.BranchID, ''),
        [Tên Phân Loại HCO] = ISNULL(cu.HCOTypeName, ''),
        [Mã Phân Hạng HCO] = ISNULL(cu.ClassId, ''),
        [Tên Phân Hạng HCO] = ISNULL(cu.ClassDescr, ''),
+	   [LineRef]=a.LineRef,
        [Mã Sản Phẩm] = ISNULL(a.InvtID, ''),
        [Tên Sản Phẩm NB] = ISNULL(invt.Descr, ''),
        [Tên Sản Phẩm Viết Tắt] = CASE
@@ -1119,13 +1120,13 @@ FROM #Ord a
 	LEFT JOIN dbo.Users sup WITH (NOLOCK) ON sup.UserName=a.SupID
 	LEFT JOIN dbo.Users asm WITH (NOLOCK) ON asm.UserName=a.ASM
 	LEFT JOIN dbo.Users Rsm WITH (NOLOCK) ON rsm.UserName =a.RSM
---where   (cu.Territory LIKE CASE WHEN @Terr = '' THEN '%' END OR cu.Territory IN (SELECT part FROM dbo.fr_SplitStringMAX(@Terr,',')))
-ORDER BY a.BranchID,
-         a.OrderDate,
-         ISNULL(a.InvcNbr, ''),
-         a.OrderNbr,
-         ISNULL(a.InvtID, ''),
-         ISNULL(a.Lotsernbr, '');
+----where   (cu.Territory LIKE CASE WHEN @Terr = '' THEN '%' END OR cu.Territory IN (SELECT part FROM dbo.fr_SplitStringMAX(@Terr,',')))
+--ORDER BY a.BranchID,
+--         a.OrderDate,
+--         ISNULL(a.InvcNbr, ''),
+--         a.OrderNbr,
+--         ISNULL(a.InvtID, ''),
+--         ISNULL(a.Lotsernbr, '');
 
 
 
@@ -1142,4 +1143,9 @@ DROP TABLE #TDiscFreeItem;
 DROP TABLE #TCpnyID;
 DROP TABLE #TOrderType;
 DROP TABLE #DataReturnIO
+
+
+
+
+
 GO
