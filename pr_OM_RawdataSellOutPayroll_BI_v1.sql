@@ -1,10 +1,16 @@
+USE [PhaNam_eSales_PRO]
+GO
+
+/****** Object:  StoredProcedure [dbo].[pr_OM_RawdataSellOutPayroll_BI_v1]    Script Date: 03/11/2021 11:11:54 AM ******/
 SET ANSI_NULLS ON
 GO
+
 SET QUOTED_IDENTIFIER ON
 GO
+
 ----  Select * from RPTRunning where ReportNbr='OLAP106' order by ReportID Desc
 
-CREATE PROC [dbo].[pr_OM_RawdataSellOutPayroll_BI_v1] -- pr_OM_RawdataSellOutPayroll_BI  '20210805','20210805'
+ALTER PROC [dbo].[pr_OM_RawdataSellOutPayroll_BI_v1] -- pr_OM_RawdataSellOutPayroll_BI  '20210805','20210805'
     @FromDate DATE,
     @ToDate DATE
 AS
@@ -886,7 +892,7 @@ FROM OM_IssueBook ib WITH (NOLOCK)
 --select * from #TOrdDisc
 --select * from #TDiscFreeItem
 
-SELECT [Mã Công Ty/CN] = ISNULL(a.BranchID, ''),
+SELECT DISTINCT [Mã Công Ty/CN] = ISNULL(a.BranchID, ''),
        [Công Ty/CN] = ISNULL(com.CpnyName, ''),
        --[Địa Chỉ Công Ty/CN] = ISNULL(com.Address,'') ,
 
@@ -925,6 +931,7 @@ SELECT [Mã Công Ty/CN] = ISNULL(a.BranchID, ''),
        [Tên Phân Loại HCO] = ISNULL(cu.HCOTypeName, ''),
        [Mã Phân Hạng HCO] = ISNULL(cu.ClassId, ''),
        [Tên Phân Hạng HCO] = ISNULL(cu.ClassDescr, ''),
+	   [Nhãn Hàng] =ISNULL(vih.NhanHangName,''),
        [Mã Sản Phẩm] = ISNULL(a.InvtID, ''),
        [Tên Sản Phẩm NB] = ISNULL(invt.Descr, ''),
        [Tên Sản Phẩm Viết Tắt] = CASE
@@ -1056,6 +1063,7 @@ FROM #Ord a
     INNER JOIN dbo.OM_OrderType oo WITH (NOLOCK)
         ON oo.OrderType = a.OrderType
            AND ARDocType IN ( 'IN', 'DM', 'CS', 'CM' )
+   LEFT JOIN dbo.vs_IN_Hierrachy vih WITH (NOLOCK) ON vih.InvtID = a.InvtID
     LEFT JOIN #SalesForce sf WITH (NOLOCK)
         ON sf.BranchID = a.BranchID
            AND sf.SlsperID = a.SlsperID
@@ -1116,12 +1124,12 @@ FROM #Ord a
 	LEFT JOIN dbo.Users asm WITH (NOLOCK) ON asm.UserName=a.ASM
 	LEFT JOIN dbo.Users Rsm WITH (NOLOCK) ON rsm.UserName =a.RSM
 --where   (cu.Territory LIKE CASE WHEN @Terr = '' THEN '%' END OR cu.Territory IN (SELECT part FROM dbo.fr_SplitStringMAX(@Terr,',')))
-ORDER BY a.BranchID,
-         a.OrderDate,
-         ISNULL(a.InvcNbr, ''),
-         a.OrderNbr,
-         ISNULL(a.InvtID, ''),
-         ISNULL(a.Lotsernbr, '');
+--ORDER BY a.BranchID,
+--         a.OrderDate,
+--         ISNULL(a.InvcNbr, ''),
+--         a.OrderNbr,
+--         ISNULL(a.InvtID, ''),
+--         ISNULL(a.Lotsernbr, '');
 
 
 
