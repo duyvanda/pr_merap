@@ -824,12 +824,7 @@ FROM #TOrder o
 --WHERE tc.ShopType+'_'+tc.PaymentsForm NOT IN (
 --                             SELECT SubChannel FROM #WithOutSubChannel
 --                         )
-GROUP BY CASE
-         WHEN u.UserTypes LIKE '%LOG%' THEN
-         'LOG'
-         ELSE
-         'MDS'
-         END,
+GROUP BY CASE WHEN u.UserTypes LIKE '%LOG%' THEN 'LOG' ELSE 'MDS'END,
          CASE
          WHEN st.DueType = 'D'
          AND st.DueIntrv IN ( '1', '3' ) THEN
