@@ -1,16 +1,19 @@
 USE [PhaNam_eSales_PRO]
 GO
 
-/****** Object:  StoredProcedure [dbo].[pr_OM_RawdataSellOutPayroll_BI_v1]    Script Date: 03/11/2021 11:11:54 AM ******/
+/****** Object:  StoredProcedure [dbo].[pr_OM_RawdataSellOutPayroll_BI_v1]    Script Date: 18/03/2022 3:50:11 PM ******/
 SET ANSI_NULLS ON
 GO
 
 SET QUOTED_IDENTIFIER ON
 GO
 
+
 ----  Select * from RPTRunning where ReportNbr='OLAP106' order by ReportID Desc
 
-ALTER PROC [dbo].[pr_OM_RawdataSellOutPayroll_BI_v1] -- pr_OM_RawdataSellOutPayroll_BI  '20210805','20210805'
+----  Select * from RPTRunning where ReportNbr='OLAP106' order by ReportID Desc
+
+ALTER PROC [dbo].[pr_OM_RawdataSellOutPayroll_BI_v1] -- pr_OM_RawdataSellOutPayroll_BI_v1  '20211229','20211229'
     @FromDate DATE,
     @ToDate DATE
 AS
@@ -175,6 +178,7 @@ SELECT BranchID,
        ReturnOrder,
        ReturnOrderdate,
        InvtID,
+	   siteID,
        Lotsernbr,
        ExpDate,
        Status,
@@ -251,6 +255,7 @@ FROM
                     END,
            so.CustID,
            so.InvtID,
+		   so.SiteID,
            Lotsernbr = so.Lotsernbr,
            ExpDate = so.ExpDate,
            VATAmount = SUM(so.VATAmount),
@@ -298,6 +303,7 @@ FROM
                o.InvcNote,
                b.SlsperID,
                b.InvtID,
+			   b.SiteID,
                b.FreeItem,
                Qty = SUM(ISNULL(l.Qty, b.LineQty)),
                Lotsernbr = ISNULL(l.LotSerNbr, ''),
@@ -401,6 +407,7 @@ FROM
                  o.InvcNote,
                  b.SlsperID,
                  b.InvtID,
+				 b.SiteID,
                  b.FreeItem,
                  a.DeliveryID,
                  a.ShipDate,
@@ -427,6 +434,7 @@ FROM
                o.InvcNote,
                b.SlsperID,
                b.InvtID,
+			   b.SiteID,
                b.FreeItem,
                Qty = SUM(ISNULL(l.Qty, b.LineQty)),
                Lotsernbr = ISNULL(l.LotSerNbr, ''),
@@ -528,6 +536,7 @@ FROM
                  o.InvcNote,
                  b.SlsperID,
                  b.InvtID,
+				 b.SiteID,
                  b.FreeItem,
                  a.DeliveryID,
                  a.ShipDate,
@@ -607,6 +616,7 @@ FROM
              so.OrderDate,
              so.CustID,
              so.InvtID,
+			 so.SiteID,
              so.Lotsernbr,
              so.ExpDate,
              so.Crtd_User,
@@ -809,7 +819,7 @@ SELECT DISTINCT
        a.SlsperID,
        a.Status,
        a.OrderNbr,
-       ShipDate = ISNULL(c.ShipDate, a.Crtd_DateTime)
+       ShipDate = a.LUpd_DateTime
 INTO #Deli
 FROM dbo.OM_Delivery a WITH (NOLOCK)
     INNER JOIN #Sales d
@@ -862,9 +872,11 @@ SELECT DISTINCT
        TruckDescr = ISNULL(tr.Descr, '')
 INTO #Book
 FROM OM_IssueBook ib WITH (NOLOCK)
-    LEFT JOIN OM_IssueBookDet ibe WITH (NOLOCK)
+    INNER JOIN OM_IssueBookDet ibe WITH (NOLOCK)
         ON ibe.BranchID = ib.BranchID
            AND ibe.BatNbr = ib.BatNbr
+	INNER JOIN #Sales dd WITH (NOLOCK) ON   dd.BranchID = ibe.BranchID
+           AND dd.OrderNbr = ibe.OrderNbr
     --INNER JOIN  OM_SalesOrd s  WITH(NOLOCK)  on s.BranchID = ibe.BranchID AND s.OrigOrderNbr = ibe.OrderNbr
     INNER JOIN Users u WITH (NOLOCK)
         ON u.UserName = ib.SlsperID
@@ -912,14 +924,14 @@ SELECT DISTINCT [Mã Công Ty/CN] = ISNULL(a.BranchID, ''),
        [Mã KH Cũ] = ISNULL(cu.RefCustID, ''),
        [Tên Khách Hàng] = ISNULL(cu.CustName, ''),
     --    [Địa Chỉ KH] = ISNULL(cu.CustAddress, ''),
-    --    [Mã Vùng BH] = ISNULL(cu.Zone, ''),
+       --[Mã Vùng BH] = ISNULL(cu.Zone, ''),
        [Tên Vùng BH] = ISNULL(cu.ZoneDescr, ''),
-    --    [Mã Khu Vực] = ISNULL(cu.Territory, ''),
+       --[Mã Khu Vực] = ISNULL(cu.Territory, ''),
        [Tên Khu Vực] = ISNULL(cu.TerritoryDescr, ''),
-    --    [Mã Tỉnh KH] = ISNULL(cu.State, ''),
+       --[Mã Tỉnh KH] = ISNULL(cu.State, ''),
        [Tên Tỉnh KH] = ISNULL(cu.StateDescr, ''),
     --    [Mã Quận/HUyện] = ISNULL(cu.District, ''),
-    --    [Tên Quận/HUyện] = ISNULL(cu.DistrictDescr, ''),
+        [Tên Quận/HUyện] = ISNULL(cu.DistrictDescr, ''),
     --    [Phường/Xã] = ISNULL(cu.WardDescr, ''),
        [Mã Kênh KH] = ISNULL(cu.Channel, ''),
        [Tên Kênh KH] = ISNULL(cu.ChannelDescr, ''),
@@ -977,8 +989,8 @@ SELECT DISTINCT [Mã Công Ty/CN] = ISNULL(a.BranchID, ''),
                                END,
        [Ngày Đặt Đon] = ISNULL(a.Crtd_DateTime, ''),
     --    [Người Tạo Đơn] = ISNULL(cre.FirstName, ''),
-       [Ngày Giao Hàng] = ISNULL(CONVERT(VARCHAR(20), d.ShipDate, 103), ''),
-       [Mã NV] = ISNULL(a.SlsperID, ''),
+       [Ngày Giao Hàng] = CONVERT(VARCHAR(20), d.ShipDate, 103),
+       [Mã NV] = LTRIM(RTRIM(ISNULL(a.SlsperID, ''))),
        [Tên CVBH] = ISNULL(sa.FirstName, ''),
 	   [Tên Quản Lý TT] = ISNULL(sup.FirstName,''),
 	   [Tên Quản Lý Khu Vực] = ISNULL(asm.FirstName,''),
@@ -1004,58 +1016,9 @@ SELECT DISTINCT [Mã Công Ty/CN] = ISNULL(a.BranchID, ''),
         [Tên Nhà Vận Chuyển] = iss.DeliveryUnitName,
     --    [Số Xe] = iss.TruckDescr,
     --    [Người Chịu Trách Nhiệm Nợ] = ISNULL(foll.FirstName, ''),
-       [Kiểu Đơn Hàng] = a.OrderType
-    --    [Mã Lý Do] = sr.ProgramID,
-    --    [Mã CSBH] = CASE
-    --                    WHEN ISNULL(dis.TypeDiscount, '') = 'SP' THEN
-    --                        ISNULL(dis.DiscIDPN, '')
-    --                    WHEN ISNULL(dis1.TypeDiscount, '') = 'SP' THEN
-    --                        ISNULL(dis1.DiscIDPN, '')
-    --                    ELSE
-    --                        ''
-    --                END,
-    --    [Tên CSBH] = CASE
-    --                     WHEN ISNULL(dis.TypeDiscount, '') = 'SP' THEN
-    --                         ISNULL(dis.Descr, '')
-    --                     WHEN ISNULL(dis1.TypeDiscount, '') = 'SP' THEN
-    --                         ISNULL(dis1.Descr, '')
-    --                     ELSE
-    --                         ''
-    --                 END,
-    --    [Mã CTKM] = CASE
-    --                    WHEN ISNULL(dis.TypeDiscount, '') = 'PR' THEN
-    --                        ISNULL(dis.DiscIDPN, '')
-    --                    WHEN ISNULL(dis1.TypeDiscount, '') = 'PR' THEN
-    --                        ISNULL(dis1.DiscIDPN, '')
-    --                    ELSE
-    --                        ''
-    --                END,
-    --    [Tên CTKM] = CASE
-    --                     WHEN ISNULL(dis.TypeDiscount, '') = 'PR' THEN
-    --                         ISNULL(dis.Descr, '')
-    --                     WHEN ISNULL(dis1.TypeDiscount, '') = 'PR' THEN
-    --                         ISNULL(dis1.Descr, '')
-    --                     ELSE
-    --                         ''
-    --                 END,
-    --    [Mã CTTL] = CASE
-    --                    WHEN ISNULL(dis.TypeDiscount, '') = 'AC' THEN
-    --                        ISNULL(dis.DiscIDPN, '')
-    --                    WHEN ISNULL(dis1.TypeDiscount, '') = 'AC' THEN
-    --                        ISNULL(dis1.DiscIDPN, '')
-    --                    ELSE
-    --                        ''
-    --                END,
-    --    [Tên CTTL] = CASE
-    --                     WHEN ISNULL(dis.TypeDiscount, '') = 'AC' THEN
-    --                         ISNULL(dis.Descr, '')
-    --                     WHEN ISNULL(dis1.TypeDiscount, '') = 'AC' THEN
-    --                         ISNULL(dis1.Descr, '')
-    --                     ELSE
-    --                         ''
-    --                 END,
-    --    [Người Liên Hệ] = cu.Attn,
-    --    [Số Điện Thoại] = cu.Phone
+       [Kiểu Đơn Hàng] = a.OrderType,
+	   [Mã Kho]=a.SiteID,
+	   [Tên Kho]=ist.Name
 
 FROM #Ord a
     INNER JOIN #TCpnyID r WITH (NOLOCK)
@@ -1063,6 +1026,7 @@ FROM #Ord a
     INNER JOIN dbo.OM_OrderType oo WITH (NOLOCK)
         ON oo.OrderType = a.OrderType
            AND ARDocType IN ( 'IN', 'DM', 'CS', 'CM' )
+	INNER JOIN dbo.IN_Site ist WITH(NOLOCK) ON ist.SiteId=a.siteID
    LEFT JOIN dbo.vs_IN_Hierrachy vih WITH (NOLOCK) ON vih.InvtID = a.InvtID
     LEFT JOIN #SalesForce sf WITH (NOLOCK)
         ON sf.BranchID = a.BranchID
@@ -1073,12 +1037,7 @@ FROM #Ord a
            AND a.OrderNbr = b.OrderNbr
            AND a.InvcNbr = b.InvcNbr
            AND a.InvcNote = b.InvcNote
-    --LEFT JOIN #DebtStatus e
-    --    ON e.BranchID = b.BranchID
-    --       AND e.CustId = b.CustId
-    --       AND e.OrderNo = b.OrderNo
-    --       AND e.BatNbr = b.BatNbr
-    --       AND e.RefNbr = b.RefNbr
+
     LEFT JOIN #TOrdDisc dis WITH (NOLOCK)
         ON dis.BranchID = a.BranchID
            AND dis.OrderNbr = a.MaCT
@@ -1147,4 +1106,9 @@ DROP TABLE #TCpnyID;
 DROP TABLE #TOrderType;
 DROP TABLE #DataReturnIO
 
+
+
+
+
 GO
+

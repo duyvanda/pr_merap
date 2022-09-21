@@ -1,16 +1,22 @@
 USE [PhaNam_eSales_PRO]
 GO
 
-/****** Object:  StoredProcedure [dbo].[pr_OM_RawdataSellOutPayroll_BI_v1]    Script Date: 03/11/2021 11:11:54 AM ******/
+/****** Object:  StoredProcedure [dbo].[pr_OM_RawdataSellOutPayroll_BI_v1]    Script Date: 28/03/2022 1:55:08 PM ******/
 SET ANSI_NULLS ON
 GO
 
 SET QUOTED_IDENTIFIER ON
 GO
 
+
+
+
+
 ----  Select * from RPTRunning where ReportNbr='OLAP106' order by ReportID Desc
 
-ALTER PROC [dbo].[pr_OM_RawdataSellOutPayroll_BI_v1] -- pr_OM_RawdataSellOutPayroll_BI  '20210805','20210805'
+----  Select * from RPTRunning where ReportNbr='OLAP106' order by ReportID Desc
+
+ALTER PROC [dbo].[pr_OM_RawdataSellOutPayroll_BI_v1] -- pr_OM_RawdataSellOutPayroll_BI_v1  '20211229','20211229'
     @FromDate DATE,
     @ToDate DATE
 AS
@@ -175,6 +181,7 @@ SELECT BranchID,
        ReturnOrder,
        ReturnOrderdate,
        InvtID,
+	   siteID,
        Lotsernbr,
        ExpDate,
        Status,
@@ -251,6 +258,7 @@ FROM
                     END,
            so.CustID,
            so.InvtID,
+		   so.SiteID,
            Lotsernbr = so.Lotsernbr,
            ExpDate = so.ExpDate,
            VATAmount = SUM(so.VATAmount),
@@ -298,6 +306,7 @@ FROM
                o.InvcNote,
                b.SlsperID,
                b.InvtID,
+			   b.SiteID,
                b.FreeItem,
                Qty = SUM(ISNULL(l.Qty, b.LineQty)),
                Lotsernbr = ISNULL(l.LotSerNbr, ''),
@@ -401,6 +410,7 @@ FROM
                  o.InvcNote,
                  b.SlsperID,
                  b.InvtID,
+				 b.SiteID,
                  b.FreeItem,
                  a.DeliveryID,
                  a.ShipDate,
@@ -427,6 +437,7 @@ FROM
                o.InvcNote,
                b.SlsperID,
                b.InvtID,
+			   b.SiteID,
                b.FreeItem,
                Qty = SUM(ISNULL(l.Qty, b.LineQty)),
                Lotsernbr = ISNULL(l.LotSerNbr, ''),
@@ -528,6 +539,7 @@ FROM
                  o.InvcNote,
                  b.SlsperID,
                  b.InvtID,
+				 b.SiteID,
                  b.FreeItem,
                  a.DeliveryID,
                  a.ShipDate,
@@ -607,6 +619,7 @@ FROM
              so.OrderDate,
              so.CustID,
              so.InvtID,
+			 so.SiteID,
              so.Lotsernbr,
              so.ExpDate,
              so.Crtd_User,
@@ -625,183 +638,183 @@ FROM
              so.RSM
 ) a
 
-SELECT DISTINCT
-       a.BranchID,
-       a.OrderNbr
-INTO #Sales
-FROM #Ord a
-WHERE CAST(a.OrderDate AS DATE)
-BETWEEN @FromDate AND @ToDate;
+ SELECT DISTINCT
+        a.BranchID,
+        a.OrderNbr
+ INTO #Sales
+ FROM #Ord a
+ WHERE CAST(a.OrderDate AS DATE)
+ BETWEEN @FromDate AND @ToDate;
 
 
 
-SELECT DISTINCT
-       ord.BranchID,
-       ord.OrderNbr,
-       d.InvtID,
-       d.LineRef,
-       dis.FreeItemID,
-       sq.TypeDiscount,
-       DiscAmt = CASE
-                     WHEN dis.DiscType = 'L' THEN
-                         d.DiscAmt
-                     WHEN dis.DiscType = 'G' THEN
-                         d.GroupDiscAmt1
-                     WHEN dis.DiscType = 'D' THEN
-                         d.DocDiscAmt
-                 END,
-       DiscPct = CASE
-                     WHEN dis.DiscType = 'L' THEN
-                         d.DiscPct
-                     WHEN dis.DiscType = 'G' THEN
-                         d.GroupDiscPct1
-                     WHEN dis.DiscType = 'D' THEN
-                         d.DocDiscAmt -- Chưa biết tính như thế nào
-                 END,
-       sq.DiscIDPN,
-       sq.DiscID,
-       sq.DiscSeq,
-       dis.SOLineRef,
-       sq.Descr
-INTO #TOrdDisc1
-FROM dbo.OM_SalesOrd ord WITH (NOLOCK)
-    INNER JOIN dbo.OM_SalesOrdDet d WITH (NOLOCK)
-        ON d.BranchID = ord.BranchID
-           AND d.OrderNbr = ord.OrderNbr
-    INNER JOIN dbo.OM_OrdDisc dis WITH (NOLOCK)
-        ON dis.BranchID = d.BranchID
-           AND dis.OrderNbr = d.OrderNbr
-           AND d.LineRef IN (
-                                SELECT part FROM dbo.fr_SplitStringMAX(dis.GroupRefLineRef, ',')
-                            )
-    INNER JOIN dbo.OM_DiscSeq sq WITH (NOLOCK)
-        ON sq.DiscID = dis.DiscID
-           AND sq.DiscSeq = dis.DiscSeq
-    INNER JOIN dbo.#Sales s WITH (NOLOCK)
-        ON ord.BranchID = s.BranchID
-           AND ord.OrigOrderNbr = s.OrderNbr
-WHERE CAST(ord.OrderDate AS DATE)
-BETWEEN @FromDate AND @ToDate; --   and ord.invcnbr='0086713'
+-- SELECT DISTINCT
+--        ord.BranchID,
+--        ord.OrderNbr,
+--        d.InvtID,
+--        d.LineRef,
+--        dis.FreeItemID,
+--        sq.TypeDiscount,
+--        DiscAmt = CASE
+--                      WHEN dis.DiscType = 'L' THEN
+--                          d.DiscAmt
+--                      WHEN dis.DiscType = 'G' THEN
+--                          d.GroupDiscAmt1
+--                      WHEN dis.DiscType = 'D' THEN
+--                          d.DocDiscAmt
+--                  END,
+--        DiscPct = CASE
+--                      WHEN dis.DiscType = 'L' THEN
+--                          d.DiscPct
+--                      WHEN dis.DiscType = 'G' THEN
+--                          d.GroupDiscPct1
+--                      WHEN dis.DiscType = 'D' THEN
+--                          d.DocDiscAmt -- Chưa biết tính như thế nào
+--                  END,
+--        sq.DiscIDPN,
+--        sq.DiscID,
+--        sq.DiscSeq,
+--        dis.SOLineRef,
+--        sq.Descr
+-- INTO #TOrdDisc1
+-- FROM dbo.OM_SalesOrd ord WITH (NOLOCK)
+--     INNER JOIN dbo.OM_SalesOrdDet d WITH (NOLOCK)
+--         ON d.BranchID = ord.BranchID
+--            AND d.OrderNbr = ord.OrderNbr
+--     INNER JOIN dbo.OM_OrdDisc dis WITH (NOLOCK)
+--         ON dis.BranchID = d.BranchID
+--            AND dis.OrderNbr = d.OrderNbr
+--            AND d.LineRef IN (
+--                                 SELECT part FROM dbo.fr_SplitStringMAX(dis.GroupRefLineRef, ',')
+--                             )
+--     INNER JOIN dbo.OM_DiscSeq sq WITH (NOLOCK)
+--         ON sq.DiscID = dis.DiscID
+--            AND sq.DiscSeq = dis.DiscSeq
+--     INNER JOIN dbo.#Sales s WITH (NOLOCK)
+--         ON ord.BranchID = s.BranchID
+--            AND ord.OrigOrderNbr = s.OrderNbr
+-- WHERE CAST(ord.OrderDate AS DATE)
+-- BETWEEN @FromDate AND @ToDate; --   and ord.invcnbr='0086713'
 
 
 
-SELECT DISTINCT
-       d.BranchID,
-       d.OrderNbr,
-       d.InvtID,
-       d.LineRef,
-       d.TypeDiscount,
-       d.DiscAmt,
-       d.DiscPct,
-       d.DiscIDPN,
-       d.DiscID,
-       d.DiscSeq,
-       d.Descr
-INTO #TOrdDisc
-FROM #TOrdDisc1 d
-WHERE d.FreeItemID = '';
+-- SELECT DISTINCT
+--        d.BranchID,
+--        d.OrderNbr,
+--        d.InvtID,
+--        d.LineRef,
+--        d.TypeDiscount,
+--        d.DiscAmt,
+--        d.DiscPct,
+--        d.DiscIDPN,
+--        d.DiscID,
+--        d.DiscSeq,
+--        d.Descr
+-- INTO #TOrdDisc
+-- FROM #TOrdDisc1 d
+-- WHERE d.FreeItemID = '';
 
---- Lấy danh sách sản phẩm khuyến mãi
-CREATE TABLE #TDiscFreeItem
-(
-    BranchID VARCHAR(30),
-    OrderNbr VARCHAR(30),
-    FreeItemID VARCHAR(30),
-    TypeDiscount VARCHAR(30),
-    DiscAmt FLOAT,
-    DiscPct FLOAT,
-    DiscIDPN VARCHAR(30),
-    DiscID VARCHAR(30),
-    DiscSeq VARCHAR(30),
-    SOLineRef VARCHAR(30),
-    Descr NVARCHAR(MAX)
-);
-INSERT INTO #TDiscFreeItem
-(
-    BranchID,
-    OrderNbr,
-    FreeItemID,
-    TypeDiscount,
-    DiscAmt,
-    DiscPct,
-    DiscIDPN,
-    DiscID,
-    DiscSeq,
-    SOLineRef,
-    Descr
-)
-SELECT DISTINCT
-       dis.BranchID,
-       dis.OrderNbr,
-       dis.FreeItemID,
-       dis.TypeDiscount,
-       0,
-       0,
-       dis.DiscIDPN,
-       dis.DiscID,
-       dis.DiscSeq,
-       dis.SOLineRef,
-       dis.Descr
-FROM #TOrdDisc1 dis
-    INNER JOIN dbo.OM_SalesOrdDet d
-        ON dis.BranchID = d.BranchID
-           AND dis.OrderNbr = d.OrderNbr
-           AND dis.FreeItemID = d.InvtID
-           AND dis.SOLineRef = d.LineRef
-WHERE FreeItemID <> ''
-      AND d.FreeItem = 1;
+-- --- Lấy danh sách sản phẩm khuyến mãi
+-- CREATE TABLE #TDiscFreeItem
+-- (
+--     BranchID VARCHAR(30),
+--     OrderNbr VARCHAR(30),
+--     FreeItemID VARCHAR(30),
+--     TypeDiscount VARCHAR(30),
+--     DiscAmt FLOAT,
+--     DiscPct FLOAT,
+--     DiscIDPN VARCHAR(30),
+--     DiscID VARCHAR(30),
+--     DiscSeq VARCHAR(30),
+--     SOLineRef VARCHAR(30),
+--     Descr NVARCHAR(MAX)
+-- );
+-- INSERT INTO #TDiscFreeItem
+-- (
+--     BranchID,
+--     OrderNbr,
+--     FreeItemID,
+--     TypeDiscount,
+--     DiscAmt,
+--     DiscPct,
+--     DiscIDPN,
+--     DiscID,
+--     DiscSeq,
+--     SOLineRef,
+--     Descr
+-- )
+-- SELECT DISTINCT
+--        dis.BranchID,
+--        dis.OrderNbr,
+--        dis.FreeItemID,
+--        dis.TypeDiscount,
+--        0,
+--        0,
+--        dis.DiscIDPN,
+--        dis.DiscID,
+--        dis.DiscSeq,
+--        dis.SOLineRef,
+--        dis.Descr
+-- FROM #TOrdDisc1 dis
+--     INNER JOIN dbo.OM_SalesOrdDet d
+--         ON dis.BranchID = d.BranchID
+--            AND dis.OrderNbr = d.OrderNbr
+--            AND dis.FreeItemID = d.InvtID
+--            AND dis.SOLineRef = d.LineRef
+-- WHERE FreeItemID <> ''
+--       AND d.FreeItem = 1;
 
-INSERT INTO #TDiscFreeItem
-(
-    BranchID,
-    OrderNbr,
-    FreeItemID,
-    TypeDiscount,
-    DiscAmt,
-    DiscPct,
-    DiscIDPN,
-    DiscID,
-    DiscSeq,
-    SOLineRef,
-    Descr
-)
-SELECT DISTINCT
-       ord.BranchID,
-       ord.OrderNbr,
-       pdis.FreeItemID,
-       sq.TypeDiscount,
-       DiscAmt = 0,
-       DiscPct = 0,
-       sq.DiscIDPN,
-       sq.DiscID,
-       sq.DiscSeq,
-       SOLineRef = d.LineRef,
-       sq.Descr
-FROM #Sales bat
-    INNER JOIN dbo.OM_SalesOrd ord WITH (NOLOCK)
-        ON ord.BranchID = bat.BranchID
-           AND bat.OrderNbr = ord.OrigOrderNbr
-    INNER JOIN dbo.OM_SalesOrdDet d WITH (NOLOCK)
-        ON d.BranchID = ord.BranchID
-           AND d.OrderNbr = ord.OrderNbr
-    INNER JOIN #TCpnyID r WITH (NOLOCK)
-        ON r.CpnyID = ord.BranchID
-    INNER JOIN dbo.OM_PDAOrdDisc pdis WITH (NOLOCK)
-        ON pdis.BranchID = d.BranchID
-           AND pdis.OrderNbr = d.OrigOrderNbr
-           AND d.InvtID = pdis.FreeItemID
-           AND d.FreeItem = 1
-           AND d.OriginalLineRef = pdis.SOLineRef
-    INNER JOIN dbo.OM_DiscSeq sq WITH (NOLOCK)
-        ON sq.DiscID = pdis.DiscID
-           AND sq.DiscSeq = pdis.DiscSeq
-    LEFT JOIN #TDiscFreeItem dis WITH (NOLOCK)
-        ON dis.BranchID = d.BranchID
-           AND dis.FreeItemID = d.InvtID
-           AND d.OrderNbr = dis.OrderNbr
-           AND d.FreeItem = 1
-           AND dis.SOLineRef = d.LineRef
-WHERE dis.OrderNbr IS NULL;
+-- INSERT INTO #TDiscFreeItem
+-- (
+--     BranchID,
+--     OrderNbr,
+--     FreeItemID,
+--     TypeDiscount,
+--     DiscAmt,
+--     DiscPct,
+--     DiscIDPN,
+--     DiscID,
+--     DiscSeq,
+--     SOLineRef,
+--     Descr
+-- )
+-- SELECT DISTINCT
+--        ord.BranchID,
+--        ord.OrderNbr,
+--        pdis.FreeItemID,
+--        sq.TypeDiscount,
+--        DiscAmt = 0,
+--        DiscPct = 0,
+--        sq.DiscIDPN,
+--        sq.DiscID,
+--        sq.DiscSeq,
+--        SOLineRef = d.LineRef,
+--        sq.Descr
+-- FROM #Sales bat
+--     INNER JOIN dbo.OM_SalesOrd ord WITH (NOLOCK)
+--         ON ord.BranchID = bat.BranchID
+--            AND bat.OrderNbr = ord.OrigOrderNbr
+--     INNER JOIN dbo.OM_SalesOrdDet d WITH (NOLOCK)
+--         ON d.BranchID = ord.BranchID
+--            AND d.OrderNbr = ord.OrderNbr
+--     INNER JOIN #TCpnyID r WITH (NOLOCK)
+--         ON r.CpnyID = ord.BranchID
+--     INNER JOIN dbo.OM_PDAOrdDisc pdis WITH (NOLOCK)
+--         ON pdis.BranchID = d.BranchID
+--            AND pdis.OrderNbr = d.OrigOrderNbr
+--            AND d.InvtID = pdis.FreeItemID
+--            AND d.FreeItem = 1
+--            AND d.OriginalLineRef = pdis.SOLineRef
+--     INNER JOIN dbo.OM_DiscSeq sq WITH (NOLOCK)
+--         ON sq.DiscID = pdis.DiscID
+--            AND sq.DiscSeq = pdis.DiscSeq
+--     LEFT JOIN #TDiscFreeItem dis WITH (NOLOCK)
+--         ON dis.BranchID = d.BranchID
+--            AND dis.FreeItemID = d.InvtID
+--            AND d.OrderNbr = dis.OrderNbr
+--            AND d.FreeItem = 1
+--            AND dis.SOLineRef = d.LineRef
+-- WHERE dis.OrderNbr IS NULL;
 
 SELECT DISTINCT
        a.BranchID,
@@ -809,7 +822,7 @@ SELECT DISTINCT
        a.SlsperID,
        a.Status,
        a.OrderNbr,
-       ShipDate = ISNULL(c.ShipDate, a.Crtd_DateTime)
+       ShipDate = a.LUpd_DateTime
 INTO #Deli
 FROM dbo.OM_Delivery a WITH (NOLOCK)
     INNER JOIN #Sales d
@@ -862,9 +875,11 @@ SELECT DISTINCT
        TruckDescr = ISNULL(tr.Descr, '')
 INTO #Book
 FROM OM_IssueBook ib WITH (NOLOCK)
-    LEFT JOIN OM_IssueBookDet ibe WITH (NOLOCK)
+    INNER JOIN OM_IssueBookDet ibe WITH (NOLOCK)
         ON ibe.BranchID = ib.BranchID
            AND ibe.BatNbr = ib.BatNbr
+	INNER JOIN #Sales dd WITH (NOLOCK) ON   dd.BranchID = ibe.BranchID
+           AND dd.OrderNbr = ibe.OrderNbr
     --INNER JOIN  OM_SalesOrd s  WITH(NOLOCK)  on s.BranchID = ibe.BranchID AND s.OrigOrderNbr = ibe.OrderNbr
     INNER JOIN Users u WITH (NOLOCK)
         ON u.UserName = ib.SlsperID
@@ -898,28 +913,29 @@ SELECT DISTINCT [Mã Công Ty/CN] = ISNULL(a.BranchID, ''),
 
        [Ngày Chứng Từ] = ISNULL(a.OrderDate, ''),
        [Số Đơn Đặt Hàng] = ISNULL(a.OrderNbr, ''),
+       [MaHD] = a.MaCT, -- #ADDNEW
        [Số Đơn Trả Hàng] = ISNULL(a.ReturnOrder, ''),
        [Ngày Trả Hàng] = ISNULL(CONVERT(VARCHAR(10), a.ReturnOrderdate, 103), ''),
        [Hóa Đơn] = ISNULL(a.InvcNbr, ''),
     --    [Ngày Tới Hạn TT] = ISNULL(CONVERT(VARCHAR(10), b.DueDate, 103), ''),
     --    [Số Hợp Đồng] = ISNULL(con.ContractNbr, ''),
        [Trạng Thái] = a.Status,
-       [Mã KH Thuế] = ISNULL(cu.CustIDInvoice, ''),
+       --[Mã KH Thuế] = ISNULL(cu.CustIDInvoice, ''),
     --    [Tên KH Thuế] = ISNULL(cu.CustNameInvoice, ''),
     --    [Địa Chỉ KH Thuế] = ISNULL(cu.CustInvoiceAddr, ''),
     --    [Mã Số Thuế] = ISNULL(cu.TaxID, ''),
-    --    [Mã KH DMS] = ISNULL(a.CustID, ''),
+        [Mã KH DMS] = ISNULL(a.CustID, ''),
        [Mã KH Cũ] = ISNULL(cu.RefCustID, ''),
        [Tên Khách Hàng] = ISNULL(cu.CustName, ''),
     --    [Địa Chỉ KH] = ISNULL(cu.CustAddress, ''),
-    --    [Mã Vùng BH] = ISNULL(cu.Zone, ''),
+       --[Mã Vùng BH] = ISNULL(cu.Zone, ''),
        [Tên Vùng BH] = ISNULL(cu.ZoneDescr, ''),
-    --    [Mã Khu Vực] = ISNULL(cu.Territory, ''),
+       --[Mã Khu Vực] = ISNULL(cu.Territory, ''),
        [Tên Khu Vực] = ISNULL(cu.TerritoryDescr, ''),
-    --    [Mã Tỉnh KH] = ISNULL(cu.State, ''),
+       --[Mã Tỉnh KH] = ISNULL(cu.State, ''),
        [Tên Tỉnh KH] = ISNULL(cu.StateDescr, ''),
     --    [Mã Quận/HUyện] = ISNULL(cu.District, ''),
-    --    [Tên Quận/HUyện] = ISNULL(cu.DistrictDescr, ''),
+        [Tên Quận/HUyện] = ISNULL(cu.DistrictDescr, ''),
     --    [Phường/Xã] = ISNULL(cu.WardDescr, ''),
        [Mã Kênh KH] = ISNULL(cu.Channel, ''),
        [Tên Kênh KH] = ISNULL(cu.ChannelDescr, ''),
@@ -977,8 +993,8 @@ SELECT DISTINCT [Mã Công Ty/CN] = ISNULL(a.BranchID, ''),
                                END,
        [Ngày Đặt Đon] = ISNULL(a.Crtd_DateTime, ''),
     --    [Người Tạo Đơn] = ISNULL(cre.FirstName, ''),
-       [Ngày Giao Hàng] = ISNULL(CONVERT(VARCHAR(20), d.ShipDate, 103), ''),
-       [Mã NV] = ISNULL(a.SlsperID, ''),
+       [Ngày Giao Hàng] = CONVERT(VARCHAR(20), d.ShipDate, 103),
+       [Mã NV] = LTRIM(RTRIM(ISNULL(a.SlsperID, ''))),
        [Tên CVBH] = ISNULL(sa.FirstName, ''),
 	   [Tên Quản Lý TT] = ISNULL(sup.FirstName,''),
 	   [Tên Quản Lý Khu Vực] = ISNULL(asm.FirstName,''),
@@ -1004,58 +1020,9 @@ SELECT DISTINCT [Mã Công Ty/CN] = ISNULL(a.BranchID, ''),
         [Tên Nhà Vận Chuyển] = iss.DeliveryUnitName,
     --    [Số Xe] = iss.TruckDescr,
     --    [Người Chịu Trách Nhiệm Nợ] = ISNULL(foll.FirstName, ''),
-       [Kiểu Đơn Hàng] = a.OrderType
-    --    [Mã Lý Do] = sr.ProgramID,
-    --    [Mã CSBH] = CASE
-    --                    WHEN ISNULL(dis.TypeDiscount, '') = 'SP' THEN
-    --                        ISNULL(dis.DiscIDPN, '')
-    --                    WHEN ISNULL(dis1.TypeDiscount, '') = 'SP' THEN
-    --                        ISNULL(dis1.DiscIDPN, '')
-    --                    ELSE
-    --                        ''
-    --                END,
-    --    [Tên CSBH] = CASE
-    --                     WHEN ISNULL(dis.TypeDiscount, '') = 'SP' THEN
-    --                         ISNULL(dis.Descr, '')
-    --                     WHEN ISNULL(dis1.TypeDiscount, '') = 'SP' THEN
-    --                         ISNULL(dis1.Descr, '')
-    --                     ELSE
-    --                         ''
-    --                 END,
-    --    [Mã CTKM] = CASE
-    --                    WHEN ISNULL(dis.TypeDiscount, '') = 'PR' THEN
-    --                        ISNULL(dis.DiscIDPN, '')
-    --                    WHEN ISNULL(dis1.TypeDiscount, '') = 'PR' THEN
-    --                        ISNULL(dis1.DiscIDPN, '')
-    --                    ELSE
-    --                        ''
-    --                END,
-    --    [Tên CTKM] = CASE
-    --                     WHEN ISNULL(dis.TypeDiscount, '') = 'PR' THEN
-    --                         ISNULL(dis.Descr, '')
-    --                     WHEN ISNULL(dis1.TypeDiscount, '') = 'PR' THEN
-    --                         ISNULL(dis1.Descr, '')
-    --                     ELSE
-    --                         ''
-    --                 END,
-    --    [Mã CTTL] = CASE
-    --                    WHEN ISNULL(dis.TypeDiscount, '') = 'AC' THEN
-    --                        ISNULL(dis.DiscIDPN, '')
-    --                    WHEN ISNULL(dis1.TypeDiscount, '') = 'AC' THEN
-    --                        ISNULL(dis1.DiscIDPN, '')
-    --                    ELSE
-    --                        ''
-    --                END,
-    --    [Tên CTTL] = CASE
-    --                     WHEN ISNULL(dis.TypeDiscount, '') = 'AC' THEN
-    --                         ISNULL(dis.Descr, '')
-    --                     WHEN ISNULL(dis1.TypeDiscount, '') = 'AC' THEN
-    --                         ISNULL(dis1.Descr, '')
-    --                     ELSE
-    --                         ''
-    --                 END,
-    --    [Người Liên Hệ] = cu.Attn,
-    --    [Số Điện Thoại] = cu.Phone
+       [Kiểu Đơn Hàng] = a.OrderType,
+	   [Mã Kho]=a.SiteID,
+	   [Tên Kho]=ist.Name
 
 FROM #Ord a
     INNER JOIN #TCpnyID r WITH (NOLOCK)
@@ -1063,6 +1030,7 @@ FROM #Ord a
     INNER JOIN dbo.OM_OrderType oo WITH (NOLOCK)
         ON oo.OrderType = a.OrderType
            AND ARDocType IN ( 'IN', 'DM', 'CS', 'CM' )
+	INNER JOIN dbo.IN_Site ist WITH(NOLOCK) ON ist.SiteId=a.siteID
    LEFT JOIN dbo.vs_IN_Hierrachy vih WITH (NOLOCK) ON vih.InvtID = a.InvtID
     LEFT JOIN #SalesForce sf WITH (NOLOCK)
         ON sf.BranchID = a.BranchID
@@ -1073,21 +1041,16 @@ FROM #Ord a
            AND a.OrderNbr = b.OrderNbr
            AND a.InvcNbr = b.InvcNbr
            AND a.InvcNote = b.InvcNote
-    --LEFT JOIN #DebtStatus e
-    --    ON e.BranchID = b.BranchID
-    --       AND e.CustId = b.CustId
-    --       AND e.OrderNo = b.OrderNo
-    --       AND e.BatNbr = b.BatNbr
-    --       AND e.RefNbr = b.RefNbr
-    LEFT JOIN #TOrdDisc dis WITH (NOLOCK)
-        ON dis.BranchID = a.BranchID
-           AND dis.OrderNbr = a.MaCT
-           AND dis.LineRef = a.LineRef
-    LEFT JOIN #TDiscFreeItem dis1 WITH (NOLOCK)
-        ON dis1.BranchID = a.BranchID
-           AND dis1.OrderNbr = a.MaCT
-           AND dis1.FreeItemID = a.InvtID
-           AND dis1.SOLineRef = a.LineRef
+
+    --LEFT JOIN #TOrdDisc dis WITH (NOLOCK)
+    --    ON dis.BranchID = a.BranchID
+    --       AND dis.OrderNbr = a.MaCT
+    --       AND dis.LineRef = a.LineRef
+    --LEFT JOIN #TDiscFreeItem dis1 WITH (NOLOCK)
+    --    ON dis1.BranchID = a.BranchID
+    --       AND dis1.OrderNbr = a.MaCT
+    --       AND dis1.FreeItemID = a.InvtID
+    --       AND dis1.SOLineRef = a.LineRef
     LEFT JOIN dbo.SI_ReasonCode sr WITH (NOLOCK)
         ON sr.ReasonID = a.ReasonCode
     LEFT JOIN #Deli d
@@ -1140,11 +1103,11 @@ DROP TABLE #SalesForce;
 --DROP TABLE #DebtStatus;
 DROP TABLE #Customer;
 DROP TABLE #Book;
-DROP TABLE #Sales;
-DROP TABLE #TOrdDisc;
-DROP TABLE #TDiscFreeItem;
+-- DROP TABLE #Sales;
+--DROP TABLE #TOrdDisc;
+--DROP TABLE #TDiscFreeItem;
 DROP TABLE #TCpnyID;
 DROP TABLE #TOrderType;
 DROP TABLE #DataReturnIO
-
 GO
+
