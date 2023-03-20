@@ -15,32 +15,33 @@ ALTER PROC [dbo].[Pr_AR_RawdataDebtDetSales_BI] -- Pr_AR_RawdataDebtDetSales_BI 
 as               
 SET NOCOUNT ON
 
-SELECT DISTINCT
-		fromtime,
-		totime,
-       CustId,
-       CustName,
-       RefCustID,
-       Zone,
-       ZoneDescr,
-       Territory,
-       TerritoryDescr,
-       State,
-       StateDescr,
-       SalesSystem,
-       SalesSystemDescr,
-       Channel,
-       ChannelDescr,
-       ShoperID,
-       ShopType,
-       ShopTypeDescr,
-       ClassDescr,
-       HCOID,
-       HCOName,
-       HCOTypeID,
-       HCOTypeName,
-       Terms,
-       TermDescr
+SELECT 
+DISTINCT
+fromtime,
+totime,
+CustId,
+CustName,
+RefCustID,
+Zone,
+ZoneDescr,
+Territory,
+TerritoryDescr,
+State,
+StateDescr,
+SalesSystem,
+SalesSystemDescr,
+Channel,
+ChannelDescr,
+ShoperID,
+ShopType,
+ShopTypeDescr,
+ClassDescr,
+HCOID,
+HCOName,
+HCOTypeID,
+HCOTypeName,
+Terms,
+TermDescr
 INTO #TableCustIDinfor
 FROM dbo.vs_AR_CustomerInfoByTime WITH (NOLOCK);
 
@@ -65,122 +66,124 @@ CREATE TABLE #hoadon
 );
 INSERT INTO #hoadon
 ------------- lấy hóa đơn nợ    
-SELECT SlsperId = ISNULL(deb.SlsperID, d.SlsperId),
-       d.BranchID,
-       d.CustId,
-       d.DocType,
-       Date = d.DocDate,
-       d.OrdNbr,
-       d.InvcNote,
-       d.InvcNbr,
-       d.OrigDocAmt,
-       AdjAmt = 0, --CASE WHEN ISNULL(ct.CancelBatNbrViettel,0) =1 THEN d.OrigDocAmt ELSE 0 END, 
-       remain = 0,
-       d.DueDate,
-       OrigOrderNbr = '',
-       d.Terms, d.Crtd_DateTime
+SELECT 
+SlsperId = ISNULL(deb.SlsperID, d.SlsperId),
+d.BranchID,
+d.CustId,
+d.DocType,
+Date = d.DocDate,
+d.OrdNbr,
+d.InvcNote,
+d.InvcNbr,
+d.OrigDocAmt,
+AdjAmt = 0, --CASE WHEN ISNULL(ct.CancelBatNbrViettel,0) =1 THEN d.OrigDocAmt ELSE 0 END, 
+remain = 0,
+d.DueDate,
+OrigOrderNbr = '',
+d.Terms, d.Crtd_DateTime
 FROM dbo.AR_Doc d WITH (NOLOCK)
-    INNER JOIN Batch b WITH (NOLOCK)
-        ON d.BranchID = b.BranchID
-           AND d.BatNbr = b.BatNbr
-           AND b.Module = 'AR'
-    LEFT JOIN OM_DebtAllocateDet deb WITH (NOLOCK)
-        ON deb.BranchID = d.BranchID
-           AND deb.ARBatNbr = d.BatNbr
-           AND deb.CustID = d.CustId
-    --LEFT JOIN dbo.AR_CustInvoiceTrans ct WITH (NOLOCK) ON ct.BatNbr=d.BatNbr AND ct.BranchID=d.BranchID
-    --Left Join OM_SalesOrd o WITH (NOLOCK) ON d.BranchID = o.BranchID and d.OrdNbr=o.OrderNbr  
-    --INNER JOIN #TableCustID tci WITH (NOLOCK)
-    --    ON tci.CustID = d.CustId
-    --INNER JOIN #TableBranchID tb WITH (NOLOCK)
-    --    ON d.BranchID = tb.BranchID
-WHERE d.DocType IN ( 'DM', 'IN' )
-      AND d.Rlsed = 1
-      AND d.DocDate <= @Date
+INNER JOIN Batch b WITH (NOLOCK)
+ON d.BranchID = b.BranchID
+AND d.BatNbr = b.BatNbr
+AND b.Module = 'AR'
+LEFT JOIN OM_DebtAllocateDet deb WITH (NOLOCK)
+ON deb.BranchID = d.BranchID
+AND deb.ARBatNbr = d.BatNbr
+AND deb.CustID = d.CustId
+WHERE 
+d.DocType IN ( 'DM', 'IN' )
+AND d.Rlsed = 1
+AND d.DocDate <= @Date
 
 
 -------------- Lấy Thanh Toán Công Nợ  
 
- SELECT a.BranchID,
-               AdjdBatNbr,
-               AdjdRefNbr,
-               AdjAmt = SUM(AdjAmt)
+SELECT 
+a.BranchID,
+AdjdBatNbr,
+AdjdRefNbr,
+AdjAmt = SUM(AdjAmt)
 INTO #tmp
-        FROM dbo.AR_Adjust a WITH (NOLOCK)
-            INNER JOIN Batch b WITH (NOLOCK)
-                ON a.BranchID = b.BranchID
-                   AND a.BatNbr = b.BatNbr
-                   AND b.Module = 'AR'
-        WHERE ISNULL(a.Reversal, '') = ''
-              AND b.Rlsed = 1
-              AND a.AdjgDocDate <= @Date
-        GROUP BY a.BranchID,
-                 AdjdBatNbr,
-                 AdjdRefNbr
+FROM dbo.AR_Adjust a WITH (NOLOCK)
+INNER JOIN Batch b WITH (NOLOCK)
+ON a.BranchID = b.BranchID
+AND a.BatNbr = b.BatNbr
+AND b.Module = 'AR'
+WHERE 
+ISNULL(a.Reversal, '') = ''
+AND b.Rlsed = 1
+AND a.AdjgDocDate <= @Date
+GROUP BY 
+a.BranchID,
+AdjdBatNbr,
+AdjdRefNbr
+
+
 INSERT INTO #hoadon
 ---UNION ALL
-SELECT SlsperId = ISNULL(deb.SlsperID, d.SlsperId),
-       d.BranchID,
-       d.CustId,
-       d.DocType,
-       Date = d.DocDate,
-       d.OrdNbr,
-       d.InvcNote,
-       d.InvcNbr,
-       OrigDocAmt = 0,
-       AdjAmt = aj.AdjAmt,
-       remain = 0,
-       d.DueDate,
-       OrigOrderNbr = '',
-       d.Terms, d.Crtd_DateTime
+SELECT 
+SlsperId = ISNULL(deb.SlsperID, d.SlsperId),
+d.BranchID,
+d.CustId,
+d.DocType,
+Date = d.DocDate,
+d.OrdNbr,
+d.InvcNote,
+d.InvcNbr,
+OrigDocAmt = 0,
+AdjAmt = aj.AdjAmt,
+remain = 0,
+d.DueDate,
+OrigOrderNbr = '',
+d.Terms, d.Crtd_DateTime
 FROM dbo.AR_Doc d WITH (NOLOCK)
-    INNER JOIN Batch b WITH (NOLOCK)
-        ON d.BranchID = b.BranchID
-           AND d.BatNbr = b.BatNbr
-           AND b.Module = 'AR'
-    INNER JOIN  #tmp aj WITH (NOLOCK)
-        ON aj.BranchID = d.BranchID
-           AND aj.AdjdBatNbr = d.BatNbr
-           AND d.RefNbr = aj.AdjdRefNbr
-    LEFT JOIN OM_DebtAllocateDet deb WITH (NOLOCK)
-        ON deb.BranchID = d.BranchID
-           AND deb.ARBatNbr = d.BatNbr
-           AND deb.CustID = d.CustId
+INNER JOIN Batch b WITH (NOLOCK)
+ON d.BranchID = b.BranchID
+AND d.BatNbr = b.BatNbr
+AND b.Module = 'AR'
+INNER JOIN  #tmp aj WITH (NOLOCK)
+ON aj.BranchID = d.BranchID
+AND aj.AdjdBatNbr = d.BatNbr
+AND d.RefNbr = aj.AdjdRefNbr
+LEFT JOIN OM_DebtAllocateDet deb WITH (NOLOCK)
+ON deb.BranchID = d.BranchID
+AND deb.ARBatNbr = d.BatNbr
+AND deb.CustID = d.CustId
 WHERE d.DocType IN ( 'DM', 'IN' )
-      AND d.Rlsed = 1
-      AND d.DocDate <= @Date
+AND d.Rlsed = 1
+AND d.DocDate <= @Date
 
 --UNION ALL
 INSERT INTO #hoadon
 ---- tra hang & điều chỉnh giảm công nợ  
-SELECT SlsperId = ISNULL(deb.SlsperID, d.SlsperId),
-       d.BranchID,
-       d.CustId,
-       d.DocType,
-       Date = d.DocDate,
-       d.OrdNbr,
-       d.InvcNote,
-       d.InvcNbr,
-       OrigDocAmt = -1 * d.OrigDocAmt,
-       AdjAmt = 0, --CASE WHEN ISNULL(ct.CancelBatNbrViettel,0) =1 THEN -1*d.OrigDocAmt ELSE 0 END, 
-       remain = 0,
-       d.DueDate,
-       OrigOrderNbr = '',
-       d.Terms, d.Crtd_DateTime
+SELECT 
+SlsperId = ISNULL(deb.SlsperID, d.SlsperId),
+d.BranchID,
+d.CustId,
+d.DocType,
+Date = d.DocDate,
+d.OrdNbr,
+d.InvcNote,
+d.InvcNbr,
+OrigDocAmt = -1 * d.OrigDocAmt,
+AdjAmt = 0, --CASE WHEN ISNULL(ct.CancelBatNbrViettel,0) =1 THEN -1*d.OrigDocAmt ELSE 0 END, 
+remain = 0,
+d.DueDate,
+OrigOrderNbr = '',
+d.Terms, d.Crtd_DateTime
 FROM dbo.AR_Doc d WITH (NOLOCK)
-    INNER JOIN Batch b WITH (NOLOCK)
-        ON d.BranchID = b.BranchID
-           AND d.BatNbr = b.BatNbr
-           AND b.Module = 'AR'
-    LEFT JOIN OM_DebtAllocateDet deb WITH (NOLOCK)
-        ON deb.BranchID = d.BranchID
-           AND deb.ARBatNbr = d.BatNbr
-           AND deb.CustID = d.CustId
-    --LEFT JOIN dbo.AR_CustInvoiceTrans ct WITH (NOLOCK) ON ct.BatNbr=d.BatNbr AND ct.BranchID=d.BranchID
+INNER JOIN Batch b WITH (NOLOCK)
+ON d.BranchID = b.BranchID
+AND d.BatNbr = b.BatNbr
+AND b.Module = 'AR'
+LEFT JOIN OM_DebtAllocateDet deb WITH (NOLOCK)
+ON deb.BranchID = d.BranchID
+AND deb.ARBatNbr = d.BatNbr
+AND deb.CustID = d.CustId
 WHERE d.DocType IN ( 'CM', 'PP' )
-      AND d.Rlsed = 1
-      AND b.Status = 'C'
-      AND d.DocDate <= @Date
+AND d.Rlsed = 1
+AND b.Status = 'C'
+AND d.DocDate <= @Date
 
 -------------- Lấy Cấn Trừ Công Nợ  
 /* Các trường hợp khác nếu sai check lại đoạn cmt này  
@@ -199,97 +202,107 @@ WHERE d.DocType IN('IN')
 AND d.Rlsed = 1  
 AND d.DocDate <=@StartDate  
 */
- SELECT a.BranchID,
-               AdjgBatNbr,
-               AdjgRefNbr,
-               AdjAmt = SUM(AdjAmt * -1)
-			   INTO #tmp1
-        FROM dbo.AR_Adjust a WITH (NOLOCK)
-            INNER JOIN Batch b WITH (NOLOCK)
-                ON a.BranchID = b.BranchID
-                   AND a.BatNbr = b.BatNbr
-                   AND b.Module = 'AR'
-        WHERE ISNULL(a.Reversal, '') = ''
-              AND b.Rlsed = 1
-              AND a.AdjgDocDate <= @Date
-        GROUP BY a.BranchID,
-                 AdjgBatNbr,
-                 AdjgRefNbr
+ SELECT 
+a.BranchID,
+AdjgBatNbr,
+AdjgRefNbr,
+AdjAmt = SUM(AdjAmt * -1)
+INTO #tmp1
+FROM dbo.AR_Adjust a WITH (NOLOCK)
+INNER JOIN Batch b WITH (NOLOCK)
+ON a.BranchID = b.BranchID
+AND a.BatNbr = b.BatNbr
+AND b.Module = 'AR'
+WHERE ISNULL(a.Reversal, '') = ''
+AND b.Rlsed = 1
+AND a.AdjgDocDate <= @Date
+GROUP BY 
+a.BranchID,
+AdjgBatNbr,
+AdjgRefNbr
+
+
 INSERT INTO #hoadon
 --UNION ALL
-SELECT SlsperId = ISNULL(deb.SlsperID, d.SlsperId),
-       d.BranchID,
-       d.CustId,
-       d.DocType,
-       Date = d.DocDate,
-       d.OrdNbr,
-       d.InvcNote,
-       d.InvcNbr,
-       OrigDocAmt = 0,
-       AdjAmt = aj.AdjAmt,
-       remain = 0,
-       d.DueDate,
-       OrigOrderNbr = '',
-       d.Terms, d.Crtd_DateTime
+SELECT 
+SlsperId = ISNULL(deb.SlsperID, d.SlsperId),
+d.BranchID,
+d.CustId,
+d.DocType,
+Date = d.DocDate,
+d.OrdNbr,
+d.InvcNote,
+d.InvcNbr,
+OrigDocAmt = 0,
+AdjAmt = aj.AdjAmt,
+remain = 0,
+d.DueDate,
+OrigOrderNbr = '',
+d.Terms, d.Crtd_DateTime
 FROM dbo.AR_Doc d WITH (NOLOCK)
-    INNER JOIN
-    #tmp1 aj WITH (NOLOCK)
-        ON aj.BranchID = d.BranchID
-           AND aj.AdjgBatNbr = d.BatNbr
-           AND d.RefNbr = aj.AdjgRefNbr
-    LEFT JOIN OM_DebtAllocateDet deb WITH (NOLOCK)
-        ON deb.BranchID = d.BranchID
-           AND deb.ARBatNbr = d.BatNbr
-           AND deb.CustID = d.CustId
+INNER JOIN
+#tmp1 aj WITH (NOLOCK)
+ON aj.BranchID = d.BranchID
+AND aj.AdjgBatNbr = d.BatNbr
+AND d.RefNbr = aj.AdjgRefNbr
+LEFT JOIN OM_DebtAllocateDet deb WITH (NOLOCK)
+ON deb.BranchID = d.BranchID
+AND deb.ARBatNbr = d.BatNbr
+AND deb.CustID = d.CustId
 WHERE d.DocType IN ( 'CM', 'PP' )
-      AND d.Rlsed = 1
-      AND d.DocDate <= @Date
+AND d.Rlsed = 1
+AND d.DocDate <= @Date
 ------------------------ Hoàn Ứng  
- SELECT a.BranchID,
-               AdjdBatNbr,
-               AdjdRefNbr,
-               AdjAmt = SUM(AdjAmt * -1)
-			   INTO #tmp2
-        FROM dbo.AR_Adjust a WITH (NOLOCK)
-            INNER JOIN Batch b WITH (NOLOCK)
-                ON a.BranchID = b.BranchID
-                   AND a.BatNbr = b.BatNbr
-                   AND b.Module = 'AR'
-        WHERE ISNULL(a.Reversal, '') = ''
-              AND b.Rlsed = 1
-              AND a.AdjgDocDate <= @Date
-        GROUP BY a.BranchID,
-                 AdjdBatNbr,
-                 AdjdRefNbr
+SELECT a.BranchID,
+AdjdBatNbr,
+AdjdRefNbr,
+AdjAmt = SUM(AdjAmt * -1)
+INTO #tmp2
+FROM dbo.AR_Adjust a WITH (NOLOCK)
+INNER JOIN Batch b WITH (NOLOCK)
+ON a.BranchID = b.BranchID
+AND a.BatNbr = b.BatNbr
+AND b.Module = 'AR'
+WHERE 
+ISNULL(a.Reversal, '') = ''
+AND b.Rlsed = 1
+AND a.AdjgDocDate <= @Date
+GROUP BY
+a.BranchID,
+AdjdBatNbr,
+AdjdRefNbr
 ---UNION ALL
+
 INSERT INTO #hoadon
-SELECT SlsperId = ISNULL(deb.SlsperID, d.SlsperId),
-       d.BranchID,
-       d.CustId,
-       d.DocType,
-       Date = d.DocDate,
-       d.OrdNbr,
-       d.InvcNote,
-       d.InvcNbr,
-       OrigDocAmt = 0,
-       AdjAmt = aj.AdjAmt,
-       remain = 0,
-       d.DueDate,
-       OrigOrderNbr = '',
-       d.Terms, d.Crtd_DateTime
+SELECT 
+SlsperId = ISNULL(deb.SlsperID, d.SlsperId),
+d.BranchID,
+d.CustId,
+d.DocType,
+Date = d.DocDate,
+d.OrdNbr,
+d.InvcNote,
+d.InvcNbr,
+OrigDocAmt = 0,
+AdjAmt = aj.AdjAmt,
+remain = 0,
+d.DueDate,
+OrigOrderNbr = '',
+d.Terms, d.Crtd_DateTime
 FROM dbo.AR_Doc d WITH (NOLOCK)
-    INNER JOIN
-   #tmp2 aj
-        ON aj.BranchID = d.BranchID
-           AND aj.AdjdBatNbr = d.BatNbr
-           AND d.RefNbr = aj.AdjdRefNbr
-    LEFT JOIN OM_DebtAllocateDet deb WITH (NOLOCK)
-        ON deb.BranchID = d.BranchID
-           AND deb.ARBatNbr = d.BatNbr
-           AND deb.CustID = d.CustId
-WHERE d.DocType IN ( 'CM', 'PP' )
-      AND d.Rlsed = 1
-      AND d.DocDate <= @Date;
+INNER JOIN
+#tmp2 aj
+ON aj.BranchID = d.BranchID
+AND aj.AdjdBatNbr = d.BatNbr
+AND d.RefNbr = aj.AdjdRefNbr
+LEFT JOIN OM_DebtAllocateDet deb WITH (NOLOCK)
+ON deb.BranchID = d.BranchID
+AND deb.ARBatNbr = d.BatNbr
+AND deb.CustID = d.CustId
+WHERE
+d.DocType IN ( 'CM', 'PP' )
+AND d.Rlsed = 1
+AND d.DocDate <= @Date;
 
 
 SELECT P.BranchID,
